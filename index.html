@@ -55,14 +55,17 @@
         }
         .tooltip {
             position: absolute;
-            background-color: white;
+            background-color: rgba(0, 38, 77, 0.9);
+            color: white;
             border: 1px solid #ccc;
             padding: 10px;
             border-radius: 4px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             display: none;
             pointer-events: none;
             z-index: 10;
+            font-size: 14px;
+            max-width: 200px;
         }
         .legend {
             display: flex;
@@ -145,6 +148,20 @@
             console.error('Erreur lors du chargement des données:', error);
         });
 
+        // Fonction pour afficher le tooltip
+        function showTooltip(event, content) {
+            d3.select("#tooltip")
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 28) + "px")
+                .style("display", "block")
+                .html(content);
+        }
+
+        // Fonction pour cacher le tooltip
+        function hideTooltip() {
+            d3.select("#tooltip").style("display", "none");
+        }
+
         function createAttackTypeChart(data) {
             const margin = {top: 20, right: 30, bottom: 40, left: 90},
                 width = 800 - margin.left - margin.right,
@@ -189,15 +206,9 @@
                 .attr("height", d => height - y(d.values.length))
                 .attr("fill", d => color(d.key))
                 .on("mouseover", function(event, d) {
-                    d3.select("#tooltip")
-                        .style("left", (event.pageX + 5) + "px")
-                        .style("top", (event.pageY - 28) + "px")
-                        .style("display", "inline-block")
-                        .html("Année: " + d.key + "<br>Nombre d'attaques: " + d.values.length);
+                    showTooltip(event, "Année: " + d.key + "<br>Nombre d'attaques: " + d.values.length);
                 })
-                .on("mouseout", function() {
-                    d3.select("#tooltip").style("display", "none");
-                });
+                .on("mouseout", hideTooltip);
         }
 
         function createFinancialLossChart(data) {
@@ -244,15 +255,9 @@
                 .attr("height", d => height - y(d.value))
                 .attr("fill", d => color(d.key))
                 .on("mouseover", function(event, d) {
-                    d3.select("#tooltip")
-                        .style("left", (event.pageX + 5) + "px")
-                        .style("top", (event.pageY - 28) + "px")
-                        .style("display", "inline-block")
-                        .html("Pays: " + d.key + "<br>Pertes financières: " + d.value + " millions $");
+                    showTooltip(event, "Pays: " + d.key + "<br>Pertes financières: " + d.value.toFixed(2) + " millions $");
                 })
-                .on("mouseout", function() {
-                    d3.select("#tooltip").style("display", "none");
-                });
+                .on("mouseout", hideTooltip);
         }
 
         function createAffectedUsersChart(data) {
@@ -299,15 +304,9 @@
                 .attr("height", d => height - y(d.value))
                 .attr("fill", d => color(d.key))
                 .on("mouseover", function(event, d) {
-                    d3.select("#tooltip")
-                        .style("left", (event.pageX + 5) + "px")
-                        .style("top", (event.pageY - 28) + "px")
-                        .style("display", "inline-block")
-                        .html("Industrie: " + d.key + "<br>Utilisateurs affectés: " + d.value);
+                    showTooltip(event, "Industrie: " + d.key + "<br>Utilisateurs affectés: " + d.value.toLocaleString('fr-FR'));
                 })
-                .on("mouseout", function() {
-                    d3.select("#tooltip").style("display", "none");
-                });
+                .on("mouseout", hideTooltip);
         }
 
         function createAttackTypePieChart(data) {
@@ -334,6 +333,10 @@
                 .outerRadius(radius - 10)
                 .innerRadius(0);
 
+            const labelArc = d3.arc()
+                .outerRadius(radius - 40)
+                .innerRadius(radius - 40);
+
             const arcs = svg.selectAll(".arc")
                 .data(pie(nestedData))
                 .enter().append("g")
@@ -343,19 +346,15 @@
                 .attr("d", arc)
                 .attr("fill", d => color(d.data.key))
                 .on("mouseover", function(event, d) {
-                    d3.select("#tooltip")
-                        .style("left", (event.pageX + 5) + "px")
-                        .style("top", (event.pageY - 28) + "px")
-                        .style("display", "inline-block")
-                        .html("Type d'attaque: " + d.data.key + "<br>Nombre d'attaques: " + d.data.value);
+                    showTooltip(event, "Type d'attaque: " + d.data.key + "<br>Nombre d'attaques: " + d.data.value);
                 })
-                .on("mouseout", function() {
-                    d3.select("#tooltip").style("display", "none");
-                });
+                .on("mouseout", hideTooltip);
 
             arcs.append("text")
-                .attr("transform", d => "translate(" + arc.centroid(d) + ")")
+                .attr("transform", d => "translate(" + labelArc.centroid(d) + ")")
                 .attr("dy", ".35em")
+                .style("text-anchor", "middle")
+                .style("font-size", "12px")
                 .text(d => d.data.key);
         }
 
@@ -428,11 +427,7 @@
                         const countryName = d.properties.name;
                         if (countryData.has(countryName)) {
                             const totalLoss = countryData.get(countryName);
-                            d3.select("#tooltip")
-                                .style("left", (event.pageX + 5) + "px")
-                                .style("top", (event.pageY - 28) + "px")
-                                .style("display", "inline-block")
-                                .html("Pays: " + countryName + "<br>Pertes financières totales: " + totalLoss + " millions $");
+                            showTooltip(event, "Pays: " + countryName + "<br>Pertes financières totales: " + totalLoss.toFixed(2) + " millions $");
                         }
                     })
                     .on("mouseout", function(d) {
@@ -440,7 +435,7 @@
                             const countryName = d.properties.name;
                             return countryData.has(countryName) ? color(countryData.get(countryName)) : "#d3d3d3";
                         });
-                        d3.select("#tooltip").style("display", "none");
+                        hideTooltip();
                     });
 
                 svg.selectAll("circle")
@@ -451,15 +446,9 @@
                     .attr("r", 5)
                     .attr("fill", d => color(d['Financial Loss (in Million $)']))
                     .on("mouseover", function(event, d) {
-                        d3.select("#tooltip")
-                            .style("left", (event.pageX + 5) + "px")
-                            .style("top", (event.pageY - 28) + "px")
-                            .style("display", "inline-block")
-                            .html("Pays: " + d.Country + "<br>Pertes financières: " + d['Financial Loss (in Million $)'] + " millions $");
+                        showTooltip(event, "Pays: " + d.Country + "<br>Pertes financières: " + d['Financial Loss (in Million $)'].toFixed(2) + " millions $");
                     })
-                    .on("mouseout", function() {
-                        d3.select("#tooltip").style("display", "none");
-                    });
+                    .on("mouseout", hideTooltip);
             });
         }
     </script>
